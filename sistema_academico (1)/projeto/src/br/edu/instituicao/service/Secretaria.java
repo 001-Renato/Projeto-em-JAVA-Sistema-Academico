@@ -8,35 +8,45 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * [PADRAO] Singleton
+ * [PADRAO] Singleton — Secretaria como registro central único.
  *
- * Motivacao tecnica: A Secretaria representa o registro central unico da
- * instituicao. Permitir multiplas instancias causaria inconsistencia de estado
- * (cada instancia teria sua propria lista de membros) e desperdicio de memoria.
- * O Singleton garante que exista exatamente uma instancia compartilhada por
- * toda a aplicacao, acessivel via ponto de acesso global getInstance().
+ * Motivação técnica: A Secretaria representa o registro central da instituição.
+ * Permitir múltiplas instâncias causaria inconsistência de estado — cada instância
+ * teria sua própria lista de membros separada, e um cadastro feito em um lugar
+ * não seria visível em outro. O Singleton garante que exista exatamente uma
+ * instância compartilhada por toda a aplicação.
+ *
+ * O segredo do padrão está em três pontos:
+ *   1. Construtor privado — ninguém faz 'new Secretaria()' de fora.
+ *   2. Atributo estático privado — guarda a única instância.
+ *   3. getInstance() — único ponto de acesso, com lazy initialization.
  */
 public class Secretaria {
 
-    /** Instancia unica — lazy initialization (criada apenas quando necessaria). */
+    /**
+     * [PADRAO] Singleton: instância única armazenada como atributo estático privado.
+     * É 'static' porque pertence à classe, não a um objeto. É criada apenas uma vez.
+     */
     private static Secretaria instancia;
 
-    private List<Pessoa> membros;
+    // [AULA] Polimorfismo com Coleções: Graças à herança, uma lista do tipo 'Pessoa'
+    // consegue armazenar 'Alunos', 'Professores' e 'Coordenadores' ao mesmo tempo!
+    private List<Pessoa> cadastros;
 
     /**
-     * Construtor privado — impede instanciacao externa via operador new.
-     * [PADRAO] Singleton: restricao de instanciacao.
+     * [PADRAO] Singleton: construtor privado — impede que qualquer código externo
+     * crie uma nova Secretaria com 'new Secretaria()'. Essa é a chave do padrão.
      */
     private Secretaria() {
-        this.membros = new ArrayList<>();
+        this.cadastros = new ArrayList<>();
     }
 
     /**
-     * Ponto de acesso global a instancia unica da Secretaria.
-     * [PADRAO] Singleton: lazy initialization — a instancia e criada
-     * somente na primeira chamada, economizando recursos.
+     * [PADRAO] Singleton: ponto de acesso global à instância única.
+     * Lazy initialization — a instância só é criada na primeira chamada,
+     * economizando memória caso a classe nunca seja utilizada.
      *
-     * @return a unica instancia de Secretaria
+     * @return a única instância de Secretaria existente na aplicação
      */
     public static Secretaria getInstance() {
         if (instancia == null) {
@@ -45,35 +55,32 @@ public class Secretaria {
         return instancia;
     }
 
-    public void cadastrarAluno(Aluno aluno) {
-        membros.add(aluno);
-        System.out.println("  Aluno \"" + aluno.getNome() + "\" cadastrado com sucesso!");
+    public void cadastrarPessoa(Pessoa pessoa) {
+        this.cadastros.add(pessoa);
+        System.out.println("Cadastro realizado com sucesso: " + pessoa.getNome());
     }
 
-    public void cadastrarProfessor(Professor professor) {
-        membros.add(professor);
-        System.out.println("  Professor \"" + professor.getNome() + "\" cadastrado com sucesso!");
-    }
-
-    public void listarTodos() {
-        System.out.println("\n========================================");
-        System.out.println("      COMUNIDADE ACADEMICA              ");
-        System.out.println("========================================");
-        if (membros.isEmpty()) {
-            System.out.println("  Nenhum membro cadastrado ainda.");
-        } else {
-            for (Pessoa p : membros) {
-                System.out.println("  " + p);
-            }
+    public void listarComunidade() {
+        if (cadastros.isEmpty()) {
+            System.out.println("Nenhum membro cadastrado.");
+            return;
         }
-        System.out.println("========================================\n");
+        System.out.println("\n--- Membros da Comunidade Academica ---");
+        // [AULA] For-Each (Laço): Itera sobre toda a lista de pessoas cadastrada.
+        for (Pessoa pessoa : cadastros) {
+            // [AULA] Late Binding (Ligação Tardia): O Java sabe qual 'exibirDetalhes()' chamar
+            // no momento da execução, dependendo se o objeto é Aluno, Professor ou Coordenador.
+            System.out.println(pessoa.exibirDetalhes());
+        }
     }
 
-    public Aluno buscarAlunoPorMatricula(String matricula) {
-        for (Pessoa p : membros) {
-            if (p instanceof Aluno) {
-                Aluno aluno = (Aluno) p;
-                if (aluno.getMatricula().equalsIgnoreCase(matricula)) {
+    public Aluno localizarAluno(String busca) {
+        for (Pessoa pessoa : cadastros) {
+            // [AULA] Operador 'instanceof': Verifica se o objeto atual da iteração é de fato um Aluno.
+            if (pessoa instanceof Aluno) {
+                // [AULA] Downcasting (Conversão explícita): Dizemos ao compilador: "Eu tenho certeza que essa Pessoa é um Aluno".
+                Aluno aluno = (Aluno) pessoa;
+                if (aluno.getMatricula().equals(busca) || aluno.getNome().equalsIgnoreCase(busca)) {
                     return aluno;
                 }
             }
@@ -81,23 +88,11 @@ public class Secretaria {
         return null;
     }
 
-    public Aluno buscarAlunoPorNome(String nome) {
-        for (Pessoa p : membros) {
-            if (p instanceof Aluno) {
-                Aluno aluno = (Aluno) p;
-                if (aluno.getNome().equalsIgnoreCase(nome)) {
-                    return aluno;
-                }
-            }
-        }
-        return null;
-    }
-
-    public Professor buscarProfessorPorSiape(String siape) {
-        for (Pessoa p : membros) {
-            if (p instanceof Professor) {
-                Professor prof = (Professor) p;
-                if (prof.getSiape().equalsIgnoreCase(siape)) {
+    public Professor localizarAutenticavel(String siape) {
+        for (Pessoa pessoa : cadastros) {
+            if (pessoa instanceof Professor) {
+                Professor prof = (Professor) pessoa;
+                if (prof.getSiape().equals(siape)) {
                     return prof;
                 }
             }
@@ -105,11 +100,7 @@ public class Secretaria {
         return null;
     }
 
-    public List<Aluno> listarAlunos() {
-        List<Aluno> alunos = new ArrayList<>();
-        for (Pessoa p : membros) {
-            if (p instanceof Aluno) alunos.add((Aluno) p);
-        }
-        return alunos;
+    public List<Pessoa> getCadastros() {
+        return cadastros;
     }
 }
